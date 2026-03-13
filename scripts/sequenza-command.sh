@@ -36,7 +36,7 @@ done
 #
 reference_base=`basename $reference_fasta | sed -e 's/\.fa$\|\.fas$\|\.fasta$//'`
 gc_wiggle="${reference_base}.gc50Base.wig.gz"
-/usr/local/bin/sequenza-utils gc_wiggle -w 50 --fasta $reference_fasta -o $gc_wiggle
+sequenza-utils gc_wiggle -w 50 --fasta $reference_fasta -o $gc_wiggle
 
 #
 # identify chromosome prefix from header
