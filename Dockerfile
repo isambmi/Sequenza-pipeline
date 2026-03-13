@@ -1,28 +1,17 @@
-FROM ubuntu:18.04
+FROM mambaorg/micromamba:2.5.0
 
-ENV DEBIAN_FRONTEND=noninteractive
+COPY --chown=$MAMBA_USER:$MAMBA_USER env.yaml /tmp/env.yaml
+RUN micromamba install -y -n base -f /tmp/env.yaml && \
+    micromamba clean --all --yes
 
-RUN apt-get update && apt-get install -y \
-    samtools \
-    tabix \
-    python \
-    python-pip \
-    r-base \
-    libcurl4-openssl-dev \
-    build-essential \
-    gfortran \
-    libxml2-dev \
-    zlib1g-dev \
-    libssl-dev \
- && rm -rf /var/lib/apt/lists/*
+ARG MAMBA_DOCKERFILE_ACTIVATE=1
 
-RUN R -q -e 'install.packages("https://cran.r-project.org/src/contrib/Archive/sequenza/sequenza_2.1.2.tar.gz", repos=NULL, type="source")'
+USER root
+COPY scripts/sequenza-command.sh scripts/sequenza-command.R /opt/
+RUN chmod +x /opt/sequenza-command.sh
 
-RUN pip install sequenza-utils
+RUN Rscript -e 'library(sequenza); packageVersion("sequenza")'
+RUN python -c 'import sequenza'
+RUN bash -lc 'which samtools && which tabix && which sequenza-utils'
 
-COPY scripts/sequenza-command.sh \
-     scripts/sequenza-command.R \
-     /opt/
-
-RUN chmod +x /opt/sequenza-command.sh && \
-    Rscript -e 'library(sequenza); packageVersion("sequenza")'
+USER $MAMBA_USER
