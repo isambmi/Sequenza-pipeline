@@ -39,24 +39,39 @@ gc_wiggle="${reference_base}.gc50Base.wig.gz"
 /usr/local/bin/sequenza-utils gc_wiggle -w 50 --fasta $reference_fasta -o $gc_wiggle
 
 #
+# identify chromosome prefix from header
+#
+if samtools view -H "$tumor_bam" | grep -Fq $'SN:chr1\t'; then
+  chromosomes="chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX chrY"
+  chr_prefix="chr"
+else
+  chromosomes="1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y"
+  chr_prefix=""
+fi
+
+#
 # run Sequenza
 #
-chromosomes="1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y"
 
-sequenza-utils bam2seqz -n ${normal_bam} -t ${tumor_bam} \
-  --fasta ${reference_fasta} -gc ${gc_wiggle} -o ${sample_id}.seqz.gz \
-  -C ${chromosomes} --parallel ${num_threads}
+sequenza-utils bam2seqz \
+  -n "$normal_bam" \
+  -t "$tumor_bam" \
+  --fasta "$reference_fasta" \
+  -gc "$gc_wiggle" \
+  -o "${sample_id}.seqz.gz" \
+  -C ${chromosomes} \
+  --parallel "$num_threads"
 
 {
+  first_chr="${chr_prefix}1"
   for chr in $chromosomes; do
-    if [[ $chr = "1" ]]; then
-      zcat ${sample_id}_1.seqz.gz
+    if [[ "$chr" == "$first_chr" ]]; then
+      zcat "${sample_id}_${chr}.seqz.gz"
     else
-      zcat ${sample_id}_${chr}.seqz.gz | tail -n +2
+      zcat "${sample_id}_${chr}.seqz.gz" | tail -n +2
     fi
   done
-} | sequenza-utils seqz_binning --seqz - -w 50 \
-  -o ${sample_id}.small.seqz.gz
+} | sequenza-utils seqz_binning --seqz - -w 50 -o "${sample_id}.small.seqz.gz"
 
 Rscript /opt/sequenza-command.R ${sample_id} ${sample_id}.small.seqz.gz
 rm ${sample_id}.small.seqz.gz
