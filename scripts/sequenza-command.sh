@@ -36,7 +36,7 @@ done
 #
 reference_base=`basename $reference_fasta | sed -e 's/\.fa$\|\.fas$\|\.fasta$//'`
 gc_wiggle="${reference_base}.gc50Base.wig.gz"
-sequenza-utils gc_wiggle -w 50 --fasta $reference_fasta -o $gc_wiggle
+/opt/conda/bin/sequenza-utils gc_wiggle -w 50 --fasta $reference_fasta -o $gc_wiggle
 
 #
 # identify chromosome prefix from header
@@ -53,7 +53,7 @@ fi
 # run Sequenza
 #
 
-sequenza-utils bam2seqz \
+/opt/conda/bin/sequenza-utils bam2seqz \
   -n "$normal_bam" \
   -t "$tumor_bam" \
   --fasta "$reference_fasta" \
