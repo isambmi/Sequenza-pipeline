@@ -31,13 +31,7 @@ while getopts s:t:n:r:c:h OPT; do
   esac
 done
 
-#
-# compute GC contents
-#
-reference_base=`basename $reference_fasta | sed -e 's/\.fa$\|\.fas$\|\.fasta$//'`
-gc_wiggle="${reference_base}.gc50Base.wig.gz"
-/opt/conda/bin/sequenza-utils gc_wiggle -w 50 --fasta $reference_fasta -o $gc_wiggle
-
+echo "Identifying chr prefix with samtools ..."
 #
 # identify chromosome prefix from header
 #
@@ -48,11 +42,22 @@ else
   chromosomes="1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y"
   chr_prefix=""
 fi
+echo "chromosomes identified"
+echo $chromosomes 
+
+echo "Computing GC contents ..."
+#
+# compute GC contents
+#
+reference_base=`basename $reference_fasta | sed -e 's/\.fa$\|\.fas$\|\.fasta$//'`
+gc_wiggle="${reference_base}.gc50Base.wig.gz"
+/opt/conda/bin/sequenza-utils gc_wiggle -w 50 --fasta $reference_fasta -o $gc_wiggle
 
 #
 # run Sequenza
 #
 
+echo "Generating seqz ..."
 /opt/conda/bin/sequenza-utils bam2seqz \
   -n "$normal_bam" \
   -t "$tumor_bam" \
@@ -60,18 +65,21 @@ fi
   -gc "$gc_wiggle" \
   -o "${sample_id}.seqz.gz" \
   -C ${chromosomes} \
+  -T /opt/conda/bin/tabix \
+  -S /opt/conda/bin/samtools \
   --parallel "$num_threads"
 
 {
   first_chr="${chr_prefix}1"
   for chr in $chromosomes; do
-    if [[ "$chr" == "$first_chr" ]]; then
+    if [ "$chr" == "$first_chr" ]; then
       zcat "${sample_id}_${chr}.seqz.gz"
     else
       zcat "${sample_id}_${chr}.seqz.gz" | tail -n +2
-    fi
+    fi  
   done
-} | /opt/conda/bin/sequenza-utils seqz_binning --seqz - -w 50 -o "${sample_id}.small.seqz.gz"
+} | /opt/conda/bin/sequenza-utils seqz_binning --seqz - -w 50 -o "${sample_id}.small.seqz.gz" -T /opt/conda/bin/tabix
 
-Rscript /opt/sequenza-command.R ${sample_id} ${sample_id}.small.seqz.gz
+echo "Run Sequenza ..."
+/opt/conda/bin/Rscript /opt/sequenza-command.R ${sample_id} ${sample_id}.small.seqz.gz
 rm ${sample_id}.small.seqz.gz
