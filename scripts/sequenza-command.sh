@@ -41,7 +41,7 @@ gc_wiggle="${reference_base}.gc50Base.wig.gz"
 #
 # identify chromosome prefix from header
 #
-if samtools view -H "$tumor_bam" | grep -Fq $'SN:chr1\t'; then
+if /opt/conda/bin/samtools view -H "$tumor_bam" | grep -Fq $'SN:chr1\t'; then
   chromosomes="chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX chrY"
   chr_prefix="chr"
 else
@@ -71,7 +71,7 @@ fi
       zcat "${sample_id}_${chr}.seqz.gz" | tail -n +2
     fi
   done
-} | sequenza-utils seqz_binning --seqz - -w 50 -o "${sample_id}.small.seqz.gz"
+} | /opt/conda/bin/sequenza-utils seqz_binning --seqz - -w 50 -o "${sample_id}.small.seqz.gz"
 
 Rscript /opt/sequenza-command.R ${sample_id} ${sample_id}.small.seqz.gz
 rm ${sample_id}.small.seqz.gz
