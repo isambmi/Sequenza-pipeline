@@ -19,12 +19,13 @@ EOS
 }
 
 num_threads=1
-while getopts s:t:n:r:c:h OPT; do
+while getopts s:t:n:r:g:c:h OPT; do
   case $OPT in
     s ) sample_id=$OPTARG;;
     t ) tumor_bam=$OPTARG;;
     n ) normal_bam=$OPTARG;;
     r ) reference_fasta=$OPTARG;;
+    g ) gc_wiggle=$OPTARG;;
     c ) num_threads=$OPTARG;;
     h ) usage;;
     ? ) usage;;
@@ -44,14 +45,6 @@ else
 fi
 echo "chromosomes identified"
 echo $chromosomes 
-
-echo "Computing GC contents ..."
-#
-# compute GC contents
-#
-reference_base=`basename $reference_fasta | sed -e 's/\.fa$\|\.fas$\|\.fasta$//'`
-gc_wiggle="${reference_base}.gc50Base.wig.gz"
-/opt/conda/bin/sequenza-utils gc_wiggle -w 50 --fasta $reference_fasta -o $gc_wiggle
 
 #
 # run Sequenza
