@@ -87,4 +87,4 @@ first_chr="${chr_prefix}1"
 /opt/conda/bin/tabix -f -s 1 -b 2 -e 2 -S 1 "${sample_id}.small.seqz.gz"
 
 echo "Run Sequenza ..."
-/opt/conda/bin/Rscript ./sequenza-command.R ${sample_id} ${sample_id}.small.seqz.gz ${num_threads}
+/opt/conda/bin/Rscript /opt/sequenza-command.R ${sample_id} ${sample_id}.small.seqz.gz ${num_threads}
