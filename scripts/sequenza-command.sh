@@ -50,29 +50,41 @@ echo $chromosomes
 # run Sequenza
 #
 
-echo "Generating seqz ..."
+echo "Generating seqz using ${gc_wiggle}..."
 /opt/conda/bin/sequenza-utils bam2seqz \
   -n "$normal_bam" \
   -t "$tumor_bam" \
   --fasta "$reference_fasta" \
-  -gc "$gc_wiggle" \
+  -gc "${gc_wiggle}" \
   -o "${sample_id}.seqz.gz" \
   -C ${chromosomes} \
   -T /opt/conda/bin/tabix \
   -S /opt/conda/bin/samtools \
   --parallel "$num_threads"
 
+echo "Starting parallel binning..."
+# bin per chromosome in parallel
+pids=()
+for chr in $chromosomes; do
+  /opt/conda/bin/sequenza-utils seqz_binning \
+    -s "${sample_id}_${chr}.seqz.gz" \
+    -w 50 \
+    -o "${sample_id}_${chr}.small.seqz.gz" \
+    -T /opt/conda/bin/tabix &
+  pids+=($!)
+done
+for pid in "${pids[@]}"; do wait "$pid"; done
+
+echo "Merging chromosome files..."
+# merge non-overlapping chromosome files
+first_chr="${chr_prefix}1"
 {
-  first_chr="${chr_prefix}1"
   for chr in $chromosomes; do
-    if [ "$chr" == "$first_chr" ]; then
-      zcat "${sample_id}_${chr}.seqz.gz"
-    else
-      zcat "${sample_id}_${chr}.seqz.gz" | tail -n +2
-    fi  
+    zcat "${sample_id}_${chr}.small.seqz.gz" | \
+      awk -v chr="$chr" -v first="$first_chr" 'NR == 1 && chr != first {next} {print}'
   done
-} | /opt/conda/bin/sequenza-utils seqz_binning --seqz - -w 50 -o "${sample_id}.small.seqz.gz" -T /opt/conda/bin/tabix
+} | /opt/conda/bin/bgzip > "${sample_id}.small.seqz.gz"
+/opt/conda/bin/tabix -f -s 1 -b 2 -e 2 -S 1 "${sample_id}.small.seqz.gz"
 
 echo "Run Sequenza ..."
-/opt/conda/bin/Rscript /opt/sequenza-command.R ${sample_id} ${sample_id}.small.seqz.gz
-rm ${sample_id}.small.seqz.gz
+/opt/conda/bin/Rscript ./sequenza-command.R ${sample_id} ${sample_id}.small.seqz.gz ${num_threads}
