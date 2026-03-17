@@ -15,3 +15,4 @@ RUN python -c 'import sequenza'
 RUN bash -lc 'which samtools && which tabix && which sequenza-utils'
 
 USER $MAMBA_USER
+RUN Rscript -e 'library(iotools); packageVersion("iotools"); library(sequenza); packageVersion("sequenza")'
